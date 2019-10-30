@@ -1,0 +1,50 @@
+Listen *:8080
+
+<VirtualHost *:8080>
+        DocumentRoot /srv/taiga/taiga-front/dist
+
+        <Directory /srv/taiga/taiga-front/dist>
+		Require all granted
+        </Directory>
+
+        <Directory /srv/taiga/taiga-back/taiga>
+                <Files wsgi.py>
+			Require all granted
+                </Files>
+        </Directory>
+
+        <Directory /srv/taiga/static>
+		Require all granted
+        </Directory>
+
+        <Directory /srv/taiga/media>
+		Require all granted
+        </Directory>
+
+	# Events_placeholder
+
+        Alias /static /srv/taiga/static
+        Alias /media /srv/taiga/media
+
+        WSGIDaemonProcess apache python-home=/srv/taiga/taiga-back/taiga python-path=/srv/taiga/taiga-back/ socket-user=apache
+        WSGIProcessGroup apache
+        WSGIScriptAlias /api /srv/taiga/taiga-back/taiga/wsgi.py/api
+        WSGIScriptAlias /admin /srv/taiga/taiga-back/taiga/wsgi.py/admin
+        WSGIPassAuthorization On
+
+        RewriteEngine on
+        RewriteCond %{REQUEST_URI} !^/admin(.*)
+        RewriteCond %{REQUEST_URI} !^/api(.*)
+        RewriteCond %{REQUEST_URI} !^/events(.*)
+        RewriteCond %{REQUEST_URI} !^/static(.*)
+        RewriteCond %{REQUEST_URI} !^/media(.*)
+        RewriteCond %{REQUEST_URI} !^/plugins(.*)
+        RewriteCond %{DOCUMENT_ROOT}/%{REQUEST_FILENAME} !-f
+        RewriteRule . /index.html [L]
+
+        ErrorLog /dev/stderr
+        CustomLog /dev/stdout combined
+</VirtualHost>
+
+ErrorLog /dev/stderr
+CustomLog /dev/stdout combined
