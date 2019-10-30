@@ -22,4 +22,8 @@ if [ "$1" == "events" ]; then
   exec /srv/taiga/start-events.sh "${@:2}"
 fi
 
-echo "Unknown component $1, must be one of 'app', 'celery', or 'events'"
+if [ "$1" == "ldap-sync" ]; then
+  exec /srv/taiga/start-ldap-sync.sh "${@:2}"
+fi
+
+echo "Unknown component $1, must be one of 'app', 'celery', 'events', or 'ldap-sync'"

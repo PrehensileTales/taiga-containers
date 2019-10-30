@@ -98,6 +98,7 @@ ENV DEBUG=False \
     LDAP_USER_EMAIL_ATTRIBUTE=mail \
     LDAP_USER_FULLNAME_ATTRIBUTE=cn \
     LDAP_USER_PHOTO_ATTRIBUTE=jpegPhoto \
+    LDAP_SYNC_INTERVAL=60 \
     OPENID_USER_URL=https://keyclaok/auth/realms/master/protocol/openid-connect/userinfo \
     OPENID_TOKEN_URL=https://keycloak/auth/realms/master/protocol/openid-connect/token \
     OPENID_AUTH_URL=https://keycloak/auth/realms/master/protocol/openid-connect/auth \
@@ -109,6 +110,7 @@ COPY entrypoint.sh /srv/taiga
 COPY start-app.sh /srv/taiga
 COPY start-celery.sh /srv/taiga
 COPY start-events.sh /srv/taiga
+COPY start-ldap-sync.sh /srv/taiga
 
 ENTRYPOINT ["/srv/taiga/entrypoint.sh"]
 CMD ["app"]
