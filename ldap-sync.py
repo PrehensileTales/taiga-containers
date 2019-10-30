@@ -89,19 +89,25 @@ class LdapConnection:
                                     else:
                                         ldap_data[attribute] = [ val.decode() for val in result_data[0][1][attribute] ]
 
-                                data['dn'] = result_data[0][0]
-                                data['username'] = ldap_data[self.user_username_attribute][0]
-                                data['full_name'] = ldap_data[self.user_fullname_attribute][0]
-                                data['email'] = ldap_data[self.user_email_attribute][0]
-                                data['photo'] = ldap_data[self.user_photo_attribute][0]
-                                data['photo_hash'] = hashlib.md5(data['photo']).digest()
-                                data['is_superuser'] = f"{self.admin_group},{self.basedn}" in ldap_data['memberOf']
-                                data['groups'] = []
+                                try:
+                                    data['dn'] = result_data[0][0]
+                                    data['username'] = ldap_data[self.user_username_attribute][0]
+                                    data['full_name'] = ldap_data[self.user_fullname_attribute][0]
+                                    data['email'] = ldap_data[self.user_email_attribute][0]
+                                    try:
+                                        data['photo'] = ldap_data[self.user_photo_attribute][0]
+                                        data['photo_hash'] = hashlib.md5(data['photo']).digest()
+                                    except KeyError:
+                                        data['photo'] = None
+                                    data['is_superuser'] = f"{self.admin_group},{self.basedn}" in ldap_data['memberOf']
+                                    data['groups'] = []
 
-                                for group in ldap_data['memberOf']:
-                                    if group.endswith(f"{self.group_base},{self.basedn}"):
-                                        data['groups'].append(self.get_group_name(group).lower())
-                                result_set[data['username']] = data
+                                    for group in ldap_data['memberOf']:
+                                        if group.endswith(f"{self.group_base},{self.basedn}"):
+                                            data['groups'].append(self.get_group_name(group).lower())
+                                    result_set[data['username']] = data
+                                except KeyError as e:
+                                    print(f"Skipping Ldap object {result_data[0][0]}, missing attribute {e}.")
         return result_set
 
 def set_taiga_user_photo(user, photo):
