@@ -20,7 +20,7 @@ config = {
     "debug": env('DEBUG', cast=bool, default=False),
     "debugInfo": env('DEBUG', cast=bool, default=False),
     "defaultLanguage": env('TAIGA_DEFAULT_LANGUAGE', default="en"),
-    "themes": ["taiga"],
+    "themes": env('TAIGA_THEMES', cast=list, default=["taiga", "taiga-fresh", "material-design", "high-contrast"]),
     "defaultTheme": env('TAIGA_DEFAULT_THEME', default="taiga"),
     "publicRegisterEnabled": env('TAIGA_PUBLIC_REGISTER_ENABLED', cast=bool, default=True),
     "feedbackEnabled": env('TAIGA_FEEDBACK_ENABLED', cast=bool, default=False),
