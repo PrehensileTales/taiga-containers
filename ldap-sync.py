@@ -58,6 +58,22 @@ class LdapConnection:
         self.con = ldap.initialize(self.url)
         self.con.simple_bind_s(self.binddn, self.bindpassword)
 
+    def get_groups(self):
+        search_base = f"{self.group_base},{self.basedn}"
+        search_filter=f"(objectClass=groupOfNames)"
+
+        res = self.con.search(search_base, ldap.SCOPE_SUBTREE, search_filter, ['cn'])
+        result_set = []
+        while True:
+            result_type, result_data = self.con.result(res, 0)
+            if (result_data == []):
+                break
+            else:
+                if result_type == ldap.RES_SEARCH_ENTRY:
+                    result_set.append(self.get_group_name(result_data[0][0]).lower())
+
+        return result_set
+
     def get_group_name(self, dn):
         res = self.con.search(dn, ldap.SCOPE_BASE, None, [self.group_name_attribute])
         result_type, result_data = self.con.result(res, 0)
@@ -76,38 +92,38 @@ class LdapConnection:
         res = self.con.search(search_base, ldap.SCOPE_SUBTREE, search_filter, self.user_attributes)
         result_set = {}
         while True:
-                result_type, result_data = self.con.result(res, 0)
-                if (result_data == []):
-                        break
-                else:
-                        if result_type == ldap.RES_SEARCH_ENTRY:
-                                ldap_data = {}
-                                data = {}
-                                for attribute in result_data[0][1]:
-                                    if attribute == self.user_photo_attribute:
-                                        ldap_data[attribute] = result_data[0][1][attribute]
-                                    else:
-                                        ldap_data[attribute] = [ val.decode() for val in result_data[0][1][attribute] ]
+            result_type, result_data = self.con.result(res, 0)
+            if (result_data == []):
+                break
+            else:
+                if result_type == ldap.RES_SEARCH_ENTRY:
+                    ldap_data = {}
+                    data = {}
+                    for attribute in result_data[0][1]:
+                        if attribute == self.user_photo_attribute:
+                            ldap_data[attribute] = result_data[0][1][attribute]
+                        else:
+                            ldap_data[attribute] = [ val.decode() for val in result_data[0][1][attribute] ]
 
-                                try:
-                                    data['dn'] = result_data[0][0]
-                                    data['username'] = ldap_data[self.user_username_attribute][0]
-                                    data['full_name'] = ldap_data[self.user_fullname_attribute][0]
-                                    data['email'] = ldap_data[self.user_email_attribute][0]
-                                    try:
-                                        data['photo'] = ldap_data[self.user_photo_attribute][0]
-                                        data['photo_hash'] = hashlib.md5(data['photo']).digest()
-                                    except KeyError:
-                                        data['photo'] = None
-                                    data['is_superuser'] = f"{self.admin_group},{self.basedn}" in ldap_data['memberOf']
-                                    data['groups'] = []
+                    try:
+                        data['dn'] = result_data[0][0]
+                        data['username'] = ldap_data[self.user_username_attribute][0]
+                        data['full_name'] = ldap_data[self.user_fullname_attribute][0]
+                        data['email'] = ldap_data[self.user_email_attribute][0]
+                        try:
+                            data['photo'] = ldap_data[self.user_photo_attribute][0]
+                            data['photo_hash'] = hashlib.md5(data['photo']).digest()
+                        except KeyError:
+                            data['photo'] = None
+                        data['is_superuser'] = f"{self.admin_group},{self.basedn}" in ldap_data['memberOf']
+                        data['groups'] = []
 
-                                    for group in ldap_data['memberOf']:
-                                        if group.endswith(f"{self.group_base},{self.basedn}"):
-                                            data['groups'].append(self.get_group_name(group).lower())
-                                    result_set[data['username']] = data
-                                except KeyError as e:
-                                    print(f"Skipping Ldap object {result_data[0][0]}, missing attribute {e}.")
+                        for group in ldap_data['memberOf']:
+                            if group.endswith(f"{self.group_base},{self.basedn}"):
+                                data['groups'].append(self.get_group_name(group).lower())
+                        result_set[data['username']] = data
+                    except KeyError as e:
+                        print(f"Skipping Ldap object {result_data[0][0]}, missing attribute {e}.")
         return result_set
 
 def set_taiga_user_photo(user, photo):
@@ -182,9 +198,8 @@ def update_taiga_user(ldap_user):
             stats['updated'] += 1
             user.save()
 
-def update_user_memberships(ldap_user):
+def update_user_memberships(projects, ldap_user):
     user = get_user_model().objects.get(username = ldap_user['username'])
-    projects = project_models.Project.objects.all()
 
     for project in projects:
         is_in_project = user in project.members.all()
@@ -247,6 +262,15 @@ def ldap_sync():
         else:
            not_in_taiga.append(ldap_username)
 
+    print("Processing projects")
+    projects = []
+    groups = ldap.get_groups()
+    taiga_projects = project_models.Project.objects.all()
+    for project in taiga_projects:
+        for group in groups:
+            if project.slug.startswith(group):
+                projects.append(project)
+
     print("Processing users")
     for user in not_in_taiga:
         create_taiga_user(ldap_users[user])
@@ -255,10 +279,11 @@ def ldap_sync():
         update_taiga_user(ldap_users[user])
 
     for username, user in ldap_users.items():
-        update_user_memberships(user)
+        update_user_memberships(projects, user)
 
     print()
     print(f"Total users considered: {len(ldap_username_list)}")
+    print(f"Total projects considered: {len(projects)}")
     print(f"Created {stats['created']}")
     print(f"Updated {stats['updated']}")
     print(f"Project memberships added: {stats['project_add']}")
