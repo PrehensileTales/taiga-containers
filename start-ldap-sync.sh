@@ -8,6 +8,6 @@ if [ -z "${LDAP_SYNC_INTERVAL}" ]; then
 fi
 
 while /bin/true; do
-  /srv/taiga/taiga-back/ldap-sync.py
+  /srv/taiga/taiga-back/ldap-sync.py || /bin/true
   sleep ${LDAP_SYNC_INTERVAL}
 done
