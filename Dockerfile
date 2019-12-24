@@ -1,10 +1,11 @@
-FROM fedora:30 as stage0
+FROM fedora:31 as stage0
 
-ARG taiga_version=4.2.14
+ARG taiga_back_version=5.0.2
+ARG taiga_front_version=5.0.4
 
 RUN dnf -y install python3-virtualenvwrapper python3-pip python3-devel libxml2-devel libxslt-devel openssl-devel libffi-devel git gcc freetype-devel libjpeg-turbo-devel libpng-devel zlib-devel openldap-devel npm && \
     mkdir /srv/taiga && cd /srv/taiga && \
-    git clone --single-branch --branch ${taiga_version} https://github.com/taigaio/taiga-back.git taiga-back && \
+    git clone --single-branch --branch ${taiga_back_version} https://github.com/taigaio/taiga-back.git taiga-back && \
     cd /srv/taiga/taiga-back && \
     rm -rf .git && \
     virtualenv -p /usr/bin/python3 taiga && \
@@ -13,7 +14,7 @@ RUN dnf -y install python3-virtualenvwrapper python3-pip python3-devel libxml2-d
     pip install django-environ && \
     pip install python-ldap && \
     cd /srv/taiga && \
-    git clone --single-branch --branch ${taiga_version}-stable https://github.com/taigaio/taiga-front-dist.git taiga-front && \
+    git clone --single-branch --branch ${taiga_front_version}-stable https://github.com/taigaio/taiga-front-dist.git taiga-front && \
     rm -rf taiga-front/.git && \
     cd /srv/taiga/ && \
     git clone https://github.com/robrotheram/taiga-contrib-openid-auth.git taiga-contrib-openid-auth && \
@@ -36,8 +37,8 @@ RUN dnf -y install python3-virtualenvwrapper python3-pip python3-devel libxml2-d
     rm -rf .git && \
     npm install
 
-FROM fedora:30
-RUN dnf -y install python3-virtualenvwrapper libxml2 libxslt openssl-libs libffi freetype libjpeg-turbo libpng zlib nc postgresql gettext httpd python3-mod_wsgi openldap npm && dnf clean all && \
+FROM fedora:31
+RUN dnf -y install python3-virtualenvwrapper libxml2 libxslt openssl-libs libffi freetype libjpeg-turbo libpng zlib nc postgresql gettext httpd python3-mod_wsgi openldap npm libxcrypt-compat && dnf clean all && \
     rm /etc/httpd/conf.d/*.conf && \
     mkdir -p /srv/taiga/media 
 COPY --from=stage0 /srv/taiga/ /srv/taiga/
