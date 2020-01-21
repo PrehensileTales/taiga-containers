@@ -1,7 +1,7 @@
 FROM fedora:31 as stage0
 
-ARG taiga_back_version=5.0.2
-ARG taiga_front_version=5.0.4
+ARG taiga_back_version=5.0.6
+ARG taiga_front_version=5.0.6
 
 RUN dnf -y install python3-virtualenvwrapper python3-pip python3-devel libxml2-devel libxslt-devel openssl-devel libffi-devel git gcc freetype-devel libjpeg-turbo-devel libpng-devel zlib-devel openldap-devel npm && \
     mkdir /srv/taiga && cd /srv/taiga && \
