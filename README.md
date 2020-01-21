@@ -71,7 +71,7 @@ If Celery is going to be used it is necessary to configure a Redis server.
 * `TAIGA_TOS_URL`
 * `TAIGA_DEFAULT_LANGUAGE`
 * `TAIGA_DEFAULT_THEME`
-* `TAIGA_THEMES` - Themes to expose in the user interface. Comma separated (taiga,taiga-fresh,material-design,high-contrast)
+* `TAIGA_THEMES` - Themes to expose in the user interface. Comma separated (high-contrast,material-design,taiga,taiga-legacy)
 * `TAIGA_GRAVATAR` - Enable gravatar support (True/False)
 * `TAIGA_FEEDBACK_ENABLED`
 * `TAIGA_FEEDBACK_EMAIL`
